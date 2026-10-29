@@ -24,12 +24,17 @@ export const catalog = {
     'ametista': { id: 'ametista', nome: 'Ametista', raridade: 'raro', cor: '#86afe0' },
     'pepita-ouro': { id: 'pepita-ouro', nome: 'Pepita de ouro', raridade: 'raro', cor: '#86afe0' },
     'diamante': { id: 'diamante', nome: 'Diamante', raridade: 'lendario', cor: '#e2bb6d' },
-    carvalho: { id: 'carvalho', nome: 'Carvalho', arte: 'assets/pixel-art/carvalho.png', cor: '#b6c894' },
+    carvalho: { id: 'carvalho', nome: 'Tronco de carvalho', arte: 'assets/pixel-art/carvalho.png', cor: '#b6c894' },
     maca: { id: 'maca', nome: 'Maçã', arte: 'assets/pixel-art/maca.png', cor: '#d09d90' },
     granito: { id: 'granito', nome: 'Granito', raridade: 'incomum', arte: 'assets/pixel-art/granito.png', cor: '#a7bdcc' },
     trigo: { id: 'trigo', nome: 'Trigo', arte: 'assets/pixel-art/trigo.png', cor: '#c7bb7e' }
   },
   areas: {
+    'madeireira-carvalho': {
+      id: 'madeireira-carvalho', nome: 'Madeireira de Carvalho', descricao: 'Um local preparado para o corte e a coleta de troncos de carvalho.',
+      tipo: 'gerar', tempoPraColetar: 7.5, oficio: 'Lenhadores', atividade: 'Cortando',
+      gera: [{ id: 'cortar-carvalho', itemId: 'carvalho', quantidadeMaxima: 3, chanceDeGerar: 1 }]
+    },
     'campos-trigo': {
       id: 'campos-trigo', nome: 'Campos de Trigo', descricao: 'Campos férteis onde seu povo cultiva trigo.',
       tipo: 'gerar', tempoPraColetar: 4.5, oficio: 'Agricultores', atividade: 'Cultivando',
@@ -60,6 +65,11 @@ export const catalog = {
       gera: [{ id: 'colher-maca', itemId: 'maca', quantidadeMaxima: 4, chanceDeGerar: 1 }]
     }
   },
+  areaActions: {
+    'abrir-madeireira': { nome: 'Madeireira de Carvalho', definitionId: 'madeireira-carvalho', verbo: 'Preparar local', custos: [['fibra-vegetal', 80], ['cascalho', 60]] },
+    'plantar-trigo': { nome: 'Plantação de Trigo', definitionId: 'campos-trigo', verbo: 'Plantar', custos: [['sementes-silvestres', 12], ['fibra-vegetal', 40], ['cascalho', 30]] },
+    'plantar-pomar': { nome: 'Pomar de Maçãs', definitionId: 'pomar-macas', verbo: 'Plantar', custos: [['semente-maca', 1], ['fibra-vegetal', 40], ['cascalho', 30]] }
+  },
   decks: {
     'povo-norte': { id: 'povo-norte', nome: 'Povo Do Norte', runa: 'ᚾ', arte: 'assets/pixel-art/povo-do-norte.png' }
   },
@@ -74,6 +84,6 @@ export const initialSetup = {
     { id: 'wood', definitionId: 'floresta-carvalho' },
     { id: 'mine', definitionId: 'pedreira-granito' }
   ],
-  populations: [{ bundleId: 'norte-commonners', quantidade: 100 }],
+  populations: [{ bundleId: 'norte-commonners', quantidade: 25 }],
   assignments: []
 };

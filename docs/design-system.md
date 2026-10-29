@@ -10,3 +10,10 @@ Os tokens e estilos compartilhados ficam em `dist/design-system.css`, carregado 
 - Evitar runas decorativas, brilho contínuo, texturas e explicações permanentes.
 - Manter nomes, quantidades e ações em destaque; informações de produção ficam no painel de detalhes.
 - Preservar foco visível, rótulos acessíveis e os estados de interação.
+
+## Regras de interação das sidebars e efeitos
+
+Seguir [os padrões do projeto](padroes-projeto.md) para pesquisa de recursos, estados recolhidos, abas Ações/Decks, avisos aleatórios e ícones pixelizados em tempo de execução. As duas sidebars compartilham largura de 280 px quando abertas e faixa de 48 px quando recolhidas, com ajustes para telas pequenas. Ícones de itens podem ser carregados remotamente em vez de criar novos assets.
+
+
+A aba Ações contém cartões de criação com nome, estoque/custo e botão indisponível até reunir materiais. A Refinaria de Pedra aparece como planejada. Reutilizar tokens e controles das sidebars; a criação informa o resultado em região de status acessível.

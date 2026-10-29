@@ -305,3 +305,14 @@ body.decks-open main{padding-right:304px}
 .resource-flight .resource-icon{width:24px;height:24px}
 .icon-attribution{display:block;margin-top:24px;color:var(--muted);font-size:9px;line-height:1.6}
 .resources-collapsed .icon-attribution{display:none}
+
+#actions-panel { overflow-y: auto; min-height: 0; padding: var(--space-3); }
+.area-action { padding: var(--space-3); margin-bottom: var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-raised); }
+.area-action h3 { margin: 0 0 var(--space-2); font-size: 16px; color: var(--ink); }
+.area-action ul { list-style: none; padding: 0; font-size: 13px; }
+.area-action li { margin: var(--space-2) 0; color: var(--ink); }
+.area-action li > span:first-child { display: block; }
+.area-action .cost-missing { color: var(--muted); }
+.area-action button { width: 100%; padding: var(--space-2); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--action); color: var(--bg); cursor: pointer; }
+.area-action button:disabled { opacity: .5; cursor: default; }
+.area-action p, #area-action-status { font-size: 13px; color: var(--muted); line-height: 1.5; }

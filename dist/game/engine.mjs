@@ -12,6 +12,16 @@ export function validateCatalog(catalog) {
     }
   }
   for (const bundle of Object.values(catalog.bundles)) requireThat(Object.hasOwn(catalog.decks, bundle.deckId), `Deck desconhecido: ${bundle.deckId}`);
+  for (const [id, action] of Object.entries(catalog.areaActions || {})) {
+    requireThat(validId(id) && Object.hasOwn(catalog.areas, action.definitionId), `Ação inválida: ${id}`);
+    requireThat(Array.isArray(action.custos) && action.custos.length > 0, `Custos ausentes: ${id}`);
+    const items = new Set();
+    for (const [itemId, amount] of action.custos) {
+      requireThat(Object.hasOwn(catalog.items, itemId) && !items.has(itemId) && Number.isSafeInteger(amount) && amount > 0, `Custo inválido: ${id}`);
+      items.add(itemId);
+    }
+  }
+
   for (const area of Object.values(catalog.areas)) {
     requireThat(area.tipo === 'gerar', `Tipo ainda não implementado: ${area.tipo}`);
     requireThat(typeof area.descricao === 'string', `Descrição ausente: ${area.id}`);
@@ -47,6 +57,21 @@ export function addArea(game, catalog, { id, definitionId, nome }) {
   requireThat(Object.hasOwn(catalog.areas, definitionId), `Área desconhecida: ${definitionId}`);
   game.areas[id] = { id, definitionId, ...(nome ? { nome } : {}) };
   return game.areas[id];
+}
+
+// Consulta e compra compartilham a mesma regra, sem depender da interface.
+export function canCreateArea(game, catalog, actionId) {
+  const action = Object.hasOwn(catalog.areaActions || {}, actionId) ? catalog.areaActions[actionId] : null;
+  return !!action && action.custos.every(([id, amount]) => game.inventory[id] >= amount);
+}
+export function createAreaFromAction(game, catalog, actionId) {
+  if (!canCreateArea(game, catalog, actionId)) return null;
+  const action = catalog.areaActions[actionId];
+  let index = 1;
+  while (Object.hasOwn(game.areas, `${action.definitionId}-${index}`)) index++;
+  const area = addArea(game, catalog, {id: `${action.definitionId}-${index}`, definitionId: action.definitionId});
+  for (const [id, amount] of action.custos) game.inventory[id] -= amount;
+  return area;
 }
 
 export function citizenIds(game, source = 'idle') {

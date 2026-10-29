@@ -1,5 +1,7 @@
 # Entidades e expansão do LORDES
 
+Consulte também [os padrões definidos pelo usuário](padroes-projeto.md).
+
 ## Arquivos
 
 - `dist/game/catalog.mjs`: definições de itens, áreas, decks, bundles e configuração inicial.
@@ -23,14 +25,12 @@ Uma definição descreve um conteúdo reutilizável. Uma instância é um local 
   oficio: 'Coletores',          // apresentação opcional
   atividade: 'Explorando',         // apresentação opcional
   arte: 'assets/locations/floresta-carvalho.png', // opcional
-  tempoPraColetar: 4,         // um ciclo por cidadão, em segundos
+  tempoPraColetar: 6,         // um ciclo por cidadão, em segundos
   gera: [
-    {
-      id: 'cortar-carvalho',    // único dentro da definição
-      itemId: 'carvalho',       // referência a catalog.items
-      quantidadeMaxima: 4,
-      chanceDeGerar: 1          // probabilidade entre 0 e 1
-    }
+    { id: 'coletar-fibra-vegetal', itemId: 'fibra-vegetal', quantidadeMaxima: 4, chanceDeGerar: 0.799 },
+    { id: 'coletar-frutas-silvestres', itemId: 'frutas-silvestres', quantidadeMaxima: 2, chanceDeGerar: 0.1 },
+    { id: 'coletar-sementes-silvestres', itemId: 'sementes-silvestres', quantidadeMaxima: 2, chanceDeGerar: 0.1 },
+    { id: 'coletar-semente-maca', itemId: 'semente-maca', quantidadeMaxima: 1, chanceDeGerar: 0.001 }
   ]
 }
 ```
@@ -51,7 +51,7 @@ O estado tem `version: 1` e é salvo no servidor por nome em `saves/*.json`. Ao 
 
 ## Itens e apresentação
 
-Itens existem fora das áreas. Cada um tem `id`, `nome` e, opcionalmente, `arte` e `cor`. O inventário usa `itemId` como chave. Um item sem arte recebe um símbolo na interface; não é necessário gerar imagens para cadastrar conteúdo.
+Itens existem fora das áreas. Cada um tem `id`, `nome` e, opcionalmente, `arte` e `cor`. O inventário usa `itemId` como chave. Os ícones são buscados em tempo de execução e pixelizados; a arte local ou um símbolo serve de fallback. Não é necessário gerar imagens para cadastrar conteúdo.
 
 ## Cidadãos, decks e bundles
 
@@ -96,3 +96,8 @@ node tests/engine.test.mjs
 `dist/game/resource-icons.mjs` pesquisa nomes em inglês na coleção Game Icons da API Iconify. Para itens novos, acrescente uma tradução em `searchNames` ou use um nome pesquisável em `item.nome`. A imagem é rasterizada em 24 × 24 pixels, com paleta RGB 3-3-2 (256 cores), alfa binário e ampliação sem suavização.
 
 Resultados e requisições são reutilizados em memória durante a sessão. Não há gravação de imagens no projeto ou no save. Enquanto carrega ou se a API falhar, o ícone local existente ou o símbolo provisório continua visível. A sidebar credita Lorc, Delapouite e colaboradores (Game-icons.net, CC BY 3.0); os ícones foram modificados pela rasterização e redução de cores.
+
+
+## Ações para criar áreas
+
+`catalog.areaActions` associa ID da ação a `definitionId`, nome, verbo e `custos` em tuplas `[itemId, quantidade]`. `canCreateArea` consulta disponibilidade; `createAreaFromAction` valida estoque, cria um ID livre com sufixo numérico e desconta materiais. Falta de recursos ou ação desconhecida retorna `null` sem mutação. Áreas repetidas são permitidas pelo mesmo preço. A interface renderiza a nova área e solicita save. Madeireira usa o item estável `carvalho` para troncos; trigo e pomar reutilizam definições existentes. Custos e cálculos estão em [padrões](padroes-projeto.md).

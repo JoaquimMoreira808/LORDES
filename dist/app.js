@@ -1,6 +1,6 @@
 import { resourceIcon, observeResourceIcons } from './game/resource-icons.mjs';
 import { catalog, initialSetup } from './game/catalog.mjs';
-import { createGame, citizenIds, similarCitizenIds, citizenGroups, moveCitizens as moveEntities, advanceGame, expectedRates, collectionProgress } from './game/engine.mjs';
+import { createGame, canCreateArea, createAreaFromAction, citizenIds, similarCitizenIds, citizenGroups, moveCitizens as moveEntities, advanceGame, expectedRates, collectionProgress } from './game/engine.mjs';
 
 import { restoreGame, saveRequest } from './game/save.mjs';
 
@@ -48,6 +48,27 @@ function renderResources(){
  $('resources').insertAdjacentHTML('beforeend','<p id="resource-search-empty" class="resources-empty" role="status" hidden>Nenhum recurso encontrado.</p>');
  filterResources();
 }
+function renderActions(){
+ $('actions-panel').innerHTML=Object.entries(catalog.areaActions).map(([id,action])=>`<section class="area-action"><h3>${escapeHtml(action.nome)}</h3><ul>${action.custos.map(([itemId,amount])=>`<li data-cost-item="${itemId}" data-cost-amount="${amount}"><span>${escapeHtml(catalog.items[itemId].nome)}</span> <span data-cost-stock></span> / ${format(amount)}</li>`).join('')}</ul><button type="button" data-create-area="${id}">${action.verbo}</button></section>`).join('')+'<section class="area-action"><h3>Refinaria de Pedra</h3><p>Em planejamento</p><p>Sugestão: transformar 2 granitos em 1 Laje de Pedra por cidadão a cada 12 s.</p></section><p id="area-action-status" role="status" aria-live="polite"></p>';
+ updateActions();
+}
+function updateActions(){
+ for(const button of $('actions-panel').querySelectorAll('[data-create-area]'))button.disabled=!activePlayer||!canCreateArea(game,catalog,button.dataset.createArea);
+ for(const row of $('actions-panel').querySelectorAll('[data-cost-item]')){
+  const stock=game.inventory[row.dataset.costItem]||0;
+  row.querySelector('[data-cost-stock]').textContent=format(stock);
+  row.classList.toggle('cost-missing',stock<Number(row.dataset.costAmount));
+ }
+}
+$('actions-panel').addEventListener('click',event=>{
+ const button=event.target.closest('[data-create-area]');
+ if(!button||!activePlayer)return;
+ const area=createAreaFromAction(game,catalog,button.dataset.createArea);
+ if(!area)return;
+ render();
+ $('area-action-status').textContent=catalog.areas[area.definitionId].nome+' criada. Aloque cidadãos para produzir.';
+ persistGame();
+});
 function generationDetails(j){
  const id=progressId(j.id,'coleta');
  return `<div class="generation-rule"><div class="work-cycle"><div class="work-label"><span id="activity-${id}">${j.definition.atividade||'Coletando'}</span><span>${decimal(j.definition.tempoPraColetar)} s / cidadão</span></div><div class="work-track" role="progressbar" aria-label="Próxima coleta" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-${id}"><div class="work-fill" id="fill-${id}"></div></div></div><div class="rule-amount">Cada cidadão encontra um tipo de recurso por coleta.</div></div>`;
@@ -68,7 +89,7 @@ locationTitlesObserver.observe($('shelves'));
 document.fonts.ready.then(fitLocationTitles);
 document.fonts.addEventListener('loadingdone',fitLocationTitles);
 function render(){
- jobs=areaViews();renderResources();
+ jobs=areaViews();renderResources();renderActions();
  $('shelves').innerHTML=jobs.map(j=>`<article class="shelf location" id="job-${j.id}" data-job="${j.id}" tabindex="0" role="group" aria-label="${j.location}, ${j.name}, receber cidadão" style="--accent:${j.color};--tint:${j.tint}">
  <div class="location-frame"><h3 class="location-title">${j.location}</h3><div class="location-window">${j.scene||j.primaryItem.arte?`<img class="location-art pixel-art ${j.scene?'location-scenery':'location-resource'}" src="${j.scene||j.primaryItem.arte}" alt="${j.location}" draggable="false">`:'<span class="location-placeholder rune-glyph" aria-hidden="true">ᛟ</span>'}<div class="location-caption"><span class="icon">${resourceIcon(j.primaryItem)}</span><span>${j.name}</span><span class="count">${format(workerCount(j.id))}</span></div><div class="cards">${cards(j.id)}</div></div></div>
  <section class="location-details" id="details-${j.id}" role="dialog" aria-label="Produção de ${j.location}"><div class="details-heading"><h4>${j.name}</h4><span>${j.definition.tipo}</span></div><p class="area-description">${j.definition.descricao}</p>
@@ -122,6 +143,7 @@ function tick(now){
  const seconds=Math.max(0,(now-previous)/1000);previous=now;
  if(!activePlayer){requestAnimationFrame(tick);return;}
  const events=advanceGame(game,catalog,seconds);
+ updateActions();
  if(Object.values(catalog.items).some(item=>(game.inventory[item.id]>0)!==!!$('stock-'+item.id)))renderResources();
  for(const event of events){
   const area=jobs.find(job=>job.id===event.areaId);if(area)proc(area,event);

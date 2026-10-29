@@ -30,15 +30,15 @@ Cada arquivo contém:
 - `state.version` e pausa;
 - `state.inventory`, indexado pelo ID dos itens;
 - `state.areas`: todas as instâncias conquistadas, seus IDs, definição e nome próprio;
-- `state.citizens`: identidade, deck, bundle, área atual e progresso de cada geração.
+- `state.citizens`: identidade, deck, bundle, área atual e progresso único de coleta (`progress.coleta`).
 
-A lista de áreas salvas é restaurada integralmente: não é substituída pelas quatro áreas iniciais. Itens novos adicionados ao catálogo começam zerados. Referências a conteúdos removidos ou versões desconhecidas interrompem a entrada com uma mensagem, preservando o arquivo original.
+A lista de áreas salvas é restaurada integralmente: não é substituída pelas duas áreas iniciais atuais. Itens novos adicionados ao catálogo começam zerados. Referências a conteúdos removidos ou versões desconhecidas interrompem a entrada com uma mensagem, preservando o arquivo original.
 
 ## Quando salva
 
 - Antes de entrar pela primeira vez com um nome novo.
 - Automaticamente a cada 5 segundos.
-- Após alocar, transferir ou devolver cidadãos.
+- Após alocar, transferir ou devolver cidadãos e após criar uma área em Ações.
 - Ao clicar em **Salvar** ou **Sair**.
 - Ao ocultar/fechar a página, tenta uma gravação final com `keepalive`. Fechar o navegador ou interromper a rede abruptamente ainda pode perder os últimos segundos; o salvamento periódico é a garantia principal.
 
@@ -58,7 +58,7 @@ python3 -m unittest discover -s tests -p 'test_server.py' -v
 
 ## Estado inicial de novas partidas
 
-- Apenas o deck Povo Do Norte, com 100 Commonners disponíveis.
+- Apenas o deck Povo Do Norte, com 25 Commonners disponíveis.
 - Apenas Floresta de Carvalho e Pedreira de Granito conquistadas.
 - Nenhum cidadão alocado e todos os estoques zerados.
 

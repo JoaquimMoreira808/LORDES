@@ -13,8 +13,8 @@ test('save restaura inventário, áreas conquistadas, cartas e progresso individ
  assert.deepEqual(restored,game);assert.notEqual(restored.citizens[5],game.citizens[5]);
 });
 test('recuperar não concede novamente as áreas ou cidadãos iniciais',()=>{
- const game=fresh();delete game.areas.mine;game.citizens[4].areaId=null;game.citizens[4].progress={};delete game.citizens[100];
- const restored=restoreGame(catalog,copy(game));assert.equal(Object.keys(restored.areas).length,1);assert.equal(Object.keys(restored.citizens).length,99);
+ const game=fresh();delete game.areas.mine;game.citizens[4].areaId=null;game.citizens[4].progress={};delete game.citizens[25];
+ const restored=restoreGame(catalog,copy(game));assert.equal(Object.keys(restored.areas).length,1);assert.equal(Object.keys(restored.citizens).length,24);
 });
 test('novo item de catálogo começa zerado ao carregar save antigo',()=>{
  const content=copy(catalog);content.items.novidade={id:'novidade',nome:'Novidade'};
@@ -54,4 +54,15 @@ test('migração usa um único progresso sem multiplicar a produção antiga',()
  game.citizens[1].progress={'coletar-fibra-vegetal':2,'coletar-cogumelo-silvestre':2,'coletar-trufa-negra':2,'coletar-semente-ancestral':2};
  const restored=restoreGame(catalog,game);assert.deepEqual(restored.citizens[1].progress,{coleta:2});
  const events=advanceGame(restored,catalog,4,()=>0);assert.equal(events.length,1);assert.equal(events[0].amount,1);
+});
+
+
+test('áreas abertas por ações e custos pagos sobrevivem à restauração', async () => {
+ const { createAreaFromAction }=await import('../dist/game/engine.mjs');
+ const game=createGame(catalog,initialSetup);
+ for(const [id,amount] of catalog.areaActions['abrir-madeireira'].custos)game.inventory[id]=amount;
+ const area=createAreaFromAction(game,catalog,'abrir-madeireira');
+ const restored=restoreGame(catalog,JSON.parse(JSON.stringify(game)));
+ assert.deepEqual(restored,game);
+ assert.equal(restored.areas[area.id].definitionId,'madeireira-carvalho');
 });

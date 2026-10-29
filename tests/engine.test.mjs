@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { catalog, initialSetup } from '../dist/game/catalog.mjs';
-import { createGame, addArea, citizenIds, citizenGroups, similarCitizenIds, moveCitizens, advanceGame, expectedRates, collectionProgress, validateCatalog } from '../dist/game/engine.mjs';
+import { createGame, canCreateArea, createAreaFromAction, addArea, citizenIds, citizenGroups, similarCitizenIds, moveCitizens, advanceGame, expectedRates, collectionProgress, validateCatalog } from '../dist/game/engine.mjs';
 const clone = value => JSON.parse(JSON.stringify(value));
 import { productionSetup } from './fixtures.mjs';
 const fresh = () => createGame(catalog, productionSetup);
@@ -9,8 +9,8 @@ const roll = (...values) => { let index=0; return () => { assert.ok(index<values
 
 test('partida nova: só o Norte, floresta e pedreira, sem ninguém alocado', () => {
  const game=createGame(catalog,initialSetup);
- assert.equal(Object.keys(game.citizens).length,100);
- assert.equal(citizenIds(game).length,100);
+ assert.equal(Object.keys(game.citizens).length,25);
+ assert.equal(citizenIds(game).length,25);
  assert.deepEqual(Object.keys(game.areas),['wood','mine']);
  assert.equal(citizenIds(game,'wood').length,0);assert.equal(citizenIds(game,'mine').length,0);
  assert.ok(Object.values(game.citizens).every(citizen=>citizen.deckId==='povo-norte'&&citizen.bundleId==='norte-commonners'&&citizen.areaId===null));
@@ -113,4 +113,34 @@ test('tabelas iniciais respeitam itens, raridades e probabilidades', () => {
 });
 test('todos os tempos de coleta aumentaram em 50%', () => {
  for(const [id,before] of Object.entries({'campos-trigo':3,'floresta-carvalho':4,'pedreira-granito':5,'pomar-macas':4}))assert.equal(catalog.areas[id].tempoPraColetar,before*1.5);
+});
+
+
+test('ações cobram custos uma vez e criam instâncias independentes sem alocar cidadãos', () => {
+ const game=createGame(catalog,initialSetup);
+ const before=JSON.stringify(game);
+ assert.equal(canCreateArea(game,catalog,'plantar-trigo'),false);
+ assert.equal(createAreaFromAction(game,catalog,'plantar-trigo'),null);
+ assert.equal(createAreaFromAction(game,catalog,'ausente'),null);
+ assert.equal(JSON.stringify(game),before);
+ for(const [actionId,action] of Object.entries(catalog.areaActions)){
+  for(const [id,amount] of action.custos)game.inventory[id]=amount*2;
+  const one=createAreaFromAction(game,catalog,actionId);
+  const two=createAreaFromAction(game,catalog,actionId);
+  assert.ok(one);assert.ok(two);assert.notEqual(one.id,two.id);
+  assert.equal(one.definitionId,action.definitionId);
+  for(const [id] of action.custos)assert.equal(game.inventory[id],0);
+  assert.equal(createAreaFromAction(game,catalog,actionId),null);
+  assert.equal(citizenIds(game,one.id).length,0);
+ }
+});
+test('madeireira produz troncos por cidadão e valida custos de abertura', () => {
+ const game=createGame(catalog,initialSetup);
+ addArea(game,catalog,{id:'madeireira',definitionId:'madeireira-carvalho'});
+ moveCitizens(game,catalog,1,'idle','madeireira',2);
+ advanceGame(game,catalog,7.5,()=>0);
+ assert.equal(game.inventory.carvalho,2);
+ assert.equal(expectedRates(game,catalog,'madeireira').carvalho,4/7.5);
+ const bad=clone(catalog);bad.areaActions['plantar-trigo'].custos.push(['trigo',-1]);
+ assert.throws(()=>validateCatalog(bad));
 });
