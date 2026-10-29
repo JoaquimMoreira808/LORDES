@@ -1,8 +1,10 @@
+import { resourceIcon, observeResourceIcons } from './game/resource-icons.mjs';
 import { catalog, initialSetup } from './game/catalog.mjs';
-import { createGame, citizenIds, similarCitizenIds, citizenGroups, moveCitizens as moveEntities, advanceGame, expectedRates, ruleProgress } from './game/engine.mjs';
+import { createGame, citizenIds, similarCitizenIds, citizenGroups, moveCitizens as moveEntities, advanceGame, expectedRates, collectionProgress } from './game/engine.mjs';
 
 import { restoreGame, saveRequest } from './game/save.mjs';
 
+observeResourceIcons(catalog);
 let game=createGame(catalog,initialSetup);
 let activePlayer=null,saveRevision=0,saveBlocked=false,saveQueue=Promise.resolve();
 const escapeHtml=value=>String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
@@ -19,7 +21,7 @@ const progressId=(areaId,ruleId)=>`${areaId}-${ruleId}`;
 const format=n=>Math.floor(n).toLocaleString('pt-BR');
 const $=id=>document.getElementById(id);
 let activeDrag=null,selectedCitizen=null,suppressCitizenClick=false,handSize=1;
-function resourceIcon(item){return item.arte?`<img class="pixel-art resource-pixel" src="${item.arte}" alt="" draggable="false">`:'<span aria-hidden="true">◆</span>';}
+
 function citizenPortrait(citizenId){
  const citizen=game.citizens[citizenId],bundle=catalog.bundles[citizen.bundleId],deck=catalog.decks[citizen.deckId];
  const art=bundle.arte||deck.arte;
@@ -32,14 +34,24 @@ function cards(id){
   return `<button class="card commonner-card assigned-card" data-citizen="${first}" data-source="${id}" aria-label="${bundle.nome}, ${deck.nome}, segure para retirar cidadãos"><span class="commonner-id"><span class="rune-glyph">${deck.runa||'ᛟ'}</span><span class="bundle-card-count">×${format(group.ids.length)}</span></span><span class="portrait">${citizenPortrait(first)}</span><small>${bundle.cartaNome||bundle.nome}</small></button>`;
  }).join(''):'';
 }
+const normalizeSearch=value=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR').trim();
+function filterResources(){
+ const query=normalizeSearch($('resource-search').value);
+ const rows=[...$('resources').querySelectorAll('.resource-row')];
+ for(const row of rows)row.hidden=!normalizeSearch(catalog.items[row.id.slice(6)].nome).includes(query);
+ $('resource-search-empty').hidden=!rows.length||rows.some(row=>!row.hidden);
+}
+$('resource-search').addEventListener('input',filterResources);
 function renderResources(){
  const rates=expectedRates(game,catalog);
- $('resources').innerHTML=Object.values(catalog.items).map(item=>`<div class="resource-row" id="stock-${item.id}" role="group" aria-label="${item.nome}" title="${item.nome}" style="--accent:${item.cor||'#c3cbb9'}"><span class="resource-art" aria-hidden="true">${resourceIcon(item)}</span><div class="resource-info"><span class="resource-name">${item.nome}</span><small>≈ ${decimal(game.paused?0:rates[item.id]||0)} / s</small></div><strong id="total-${item.id}">${format(game.inventory[item.id])}</strong></div>`).join('');
+ $('resources').innerHTML=Object.values(catalog.items).filter(item=>game.inventory[item.id]>0).map(item=>`<div class="resource-row" id="stock-${item.id}" role="group" aria-label="${item.nome}" title="${item.nome}" style="--accent:${item.cor||'#c3cbb9'}"><span class="resource-art" aria-hidden="true">${resourceIcon(item)}</span><div class="resource-info"><span class="resource-name">${item.nome}</span><small>≈ ${decimal(game.paused?0:rates[item.id]||0)} / s</small></div><strong id="total-${item.id}">${format(game.inventory[item.id])}</strong></div>`).join('')||'<p class="resources-empty">Você ainda não tem recursos. Aloque cidadãos nas áreas para começar a coletar.</p>';
+ $('resources').insertAdjacentHTML('beforeend','<p id="resource-search-empty" class="resources-empty" role="status" hidden>Nenhum recurso encontrado.</p>');
+ filterResources();
 }
-function generationDetails(j){return j.definition.gera.map(rule=>{
- const item=catalog.items[rule.itemId],id=progressId(j.id,rule.id);
- return `<div class="generation-rule"><div class="generation-name">${resourceIcon(item)}<span>${item.nome}</span><small>${decimal(rule.chanceDeGerar*100)}%</small></div><div class="work-cycle"><div class="work-label"><span id="activity-${id}">${j.definition.atividade||'Gerando'}</span><span>${decimal(rule.tempoPraGerar)} s / cidadão</span></div><div class="work-track" role="progressbar" aria-label="Próxima geração de ${item.nome}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-${id}"><div class="work-fill" id="fill-${id}"></div></div></div><div class="rule-amount">1–${format(rule.quantidadeMaxima)} por acerto · ${workerCount(j.id)} tentativas / ciclo</div></div>`;
-}).join('');}
+function generationDetails(j){
+ const id=progressId(j.id,'coleta');
+ return `<div class="generation-rule"><div class="work-cycle"><div class="work-label"><span id="activity-${id}">${j.definition.atividade||'Coletando'}</span><span>${decimal(j.definition.tempoPraColetar)} s / cidadão</span></div><div class="work-track" role="progressbar" aria-label="Próxima coleta" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-${id}"><div class="work-fill" id="fill-${id}"></div></div></div><div class="rule-amount">Cada cidadão encontra um tipo de recurso por coleta.</div></div>`;
+}
 function fitLocationTitles(){
  document.querySelectorAll('.location-title').forEach(title=>{
   const available=title.clientWidth-8;
@@ -61,7 +73,7 @@ function render(){
  <div class="location-frame"><h3 class="location-title">${j.location}</h3><div class="location-window">${j.scene||j.primaryItem.arte?`<img class="location-art pixel-art ${j.scene?'location-scenery':'location-resource'}" src="${j.scene||j.primaryItem.arte}" alt="${j.location}" draggable="false">`:'<span class="location-placeholder rune-glyph" aria-hidden="true">ᛟ</span>'}<div class="location-caption"><span class="icon">${resourceIcon(j.primaryItem)}</span><span>${j.name}</span><span class="count">${format(workerCount(j.id))}</span></div><div class="cards">${cards(j.id)}</div></div></div>
  <section class="location-details" id="details-${j.id}" role="dialog" aria-label="Produção de ${j.location}"><div class="details-heading"><h4>${j.name}</h4><span>${j.definition.tipo}</span></div><p class="area-description">${j.definition.descricao}</p>
  ${generationDetails(j)}
- <div class="shelf-foot"><span>${format(workerCount(j.id))} cidadãos</span><strong>${j.definition.gera.length} ${j.definition.gera.length===1?'geração':'gerações'}</strong></div><div class="details-rate">Média esperada <strong>${Object.entries(expectedRates(game,catalog,j.id)).map(([itemId,rate])=>`${decimal(rate)} ${catalog.items[itemId].nome}/s`).join(' · ')}</strong></div></section>
+ <div class="shelf-foot"><span>${format(workerCount(j.id))} cidadãos</span><strong>1 coleta por cidadão / ciclo</strong></div></section>
  </article>`).join('');
  fitLocationTitles();
 }
@@ -70,18 +82,30 @@ const displays=Object.fromEntries(Object.keys(catalog.items).map(id=>[id,0]));
 const activityTimers=new Map();
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)');
 function flash(element,cls){element.classList.remove(cls);void element.offsetWidth;element.classList.add(cls);}
-function floatText(parent,text,className){const node=document.createElement('span');node.className=className;node.textContent=text;node.setAttribute('aria-hidden','true');parent.appendChild(node);setTimeout(()=>node.remove(),1400);}
+function floatText(parent,text,className){
+ const node=document.createElement('span');node.className=className;node.textContent=text;node.setAttribute('aria-hidden','true');
+ // Varia apenas a origem; a animação de subida mantém seu percurso habitual.
+ if(className==='yield-label'){
+  node.style.left=(35+Math.random()*30)+'%';
+  node.style.top=(35+Math.random()*30)+'%';
+ }else if(className==='stock-gain'){
+  node.style.right=(Math.random()*24)+'px';
+  node.style.top=(9+Math.random()*12)+'px';
+ }
+ parent.appendChild(node);setTimeout(()=>node.remove(),1400);
+}
 function proc(job,event){
  const item=catalog.items[event.itemId],amount=event.amount;
  const shelf=$('job-'+job.id),stock=$('stock-'+item.id);
- const id=progressId(job.id,event.ruleId);
+ const id=progressId(job.id,'coleta');
  flash(shelf,'proc');
  $('activity-'+id).textContent=amount?'Coleta concluída':'Sem resultado';
  clearTimeout(activityTimers.get(id));
  activityTimers.set(id,setTimeout(()=>{$('activity-'+id).textContent=job.definition.atividade||'Gerando';activityTimers.delete(id);},850));
  if(!amount)return;
  floatText(shelf,'+'+format(amount)+' '+item.nome,'yield-label');
- const arrive=()=>{flash(stock,'received');floatText(stock,'+'+format(amount),'stock-gain');};
+ if(!stock||stock.hidden||$('resources').hidden)return;
+ const arrive=()=>{if(!stock.isConnected)return;flash(stock,'received');floatText(stock,'+'+format(amount),'stock-gain');};
  if(reducedMotion.matches){arrive();return;}
  const from=shelf.querySelector('.icon').getBoundingClientRect(),to=stock.querySelector('.resource-art').getBoundingClientRect();
  for(let i=0;i<4;i++){
@@ -97,21 +121,21 @@ let previous=performance.now();
 function tick(now){
  const seconds=Math.max(0,(now-previous)/1000);previous=now;
  if(!activePlayer){requestAnimationFrame(tick);return;}
- for(const event of advanceGame(game,catalog,seconds)){
+ const events=advanceGame(game,catalog,seconds);
+ if(Object.values(catalog.items).some(item=>(game.inventory[item.id]>0)!==!!$('stock-'+item.id)))renderResources();
+ for(const event of events){
   const area=jobs.find(job=>job.id===event.areaId);if(area)proc(area,event);
  }
  for(const job of jobs){
-  for(const rule of job.definition.gera){
-   const id=progressId(job.id,rule.id),fraction=ruleProgress(game,catalog,job.id,rule.id);
+   const id=progressId(job.id,'coleta'),fraction=collectionProgress(game,catalog,job.id);
    $('fill-'+id).style.transform=`scaleX(${fraction})`;
    $('progress-'+id).setAttribute('aria-valuenow',Math.round(fraction*100));
-  }
  }
  for(const item of Object.values(catalog.items)){
   const id=item.id;
   displays[id]+=(game.inventory[id]-displays[id])*Math.min(1,seconds*7);
   if(game.inventory[id]-displays[id]<.05)displays[id]=game.inventory[id];
-  $('total-'+id).textContent=format(displays[id]);
+  const total=$('total-'+id);if(total)total.textContent=format(displays[id]);
  }
  requestAnimationFrame(tick);
 }
@@ -125,11 +149,31 @@ function setDrawer(open){
  drawer.classList.toggle('is-open',open);
  document.body.classList.toggle('decks-open',open);
  drawerToggle.setAttribute('aria-expanded',String(open));
- const label=open?'Recolher decks':'Abrir decks';
+ const label=open?'Recolher decks e ações':'Abrir decks e ações';
  drawerToggle.setAttribute('aria-label',label);drawerToggle.title=label;
  drawerContent.inert=!open;
 }
 drawerToggle.addEventListener('click',()=>setDrawer(!drawerOpen));
+const drawerTabs=[$('actions-tab'),$('decks-tab')];
+function selectDrawerTab(tab){
+ for(const entry of drawerTabs){
+  const selected=entry===tab;
+  entry.setAttribute('aria-selected',String(selected));entry.tabIndex=selected?0:-1;
+  $(entry.getAttribute('aria-controls')).hidden=!selected;
+ }
+ drawer.querySelector('.drawer-heading h2').textContent=tab===$('actions-tab')?'Ações':'Seus decks';
+}
+for(const tab of drawerTabs){
+ tab.addEventListener('click',()=>selectDrawerTab(tab));
+ tab.addEventListener('keydown',event=>{
+  let next;
+  if(event.key==='ArrowRight'||event.key==='ArrowLeft')next=drawerTabs[1-drawerTabs.indexOf(tab)];
+  if(event.key==='Home')next=drawerTabs[0];
+  if(event.key==='End')next=drawerTabs[drawerTabs.length-1];
+  if(next){event.preventDefault();selectDrawerTab(next);next.focus();}
+ });
+}
+
 document.addEventListener('keydown',event=>{
  if(event.key==='Escape'&&drawerOpen){drawerToggle.focus();setDrawer(false);}
 });
@@ -374,7 +418,7 @@ $('login-form').addEventListener('submit',async event=>{
   const saved=result.state?result:await saveRequest('save',{name:result.name,state:restored,revision:0});
   for(const timer of activityTimers.values())clearTimeout(timer);activityTimers.clear();
   game=restored;activePlayer=saved.name;saveRevision=saved.revision;saveBlocked=false;saveQueue=Promise.resolve();
-  selectedCitizen=null;handSize=1;
+  selectedCitizen=null;handSize=1;$('resource-search').value='';
   for(const id of Object.keys(catalog.items))displays[id]=game.inventory[id];
   render();renderBundle();setDrawer(false);previous=performance.now();
   $('player-label').textContent=activePlayer;

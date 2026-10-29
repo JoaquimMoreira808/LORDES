@@ -24,8 +24,10 @@ export function restoreGame(catalog, saved) {
   ensure(bundle&&Object.hasOwn(catalog.bundles,citizen.bundleId)&&bundle.deckId===citizen.deckId&&Object.hasOwn(catalog.decks,citizen.deckId),'Deck ou bundle do save não encontrado.');
   ensure(citizen.areaId===null||Object.hasOwn(game.areas,citizen.areaId),'Área do cidadão não encontrada.');
   ensure(object(citizen.progress)&&Object.values(citizen.progress).every(value=>Number.isFinite(value)&&value>=0),'Progresso inválido.');
-  const rules=citizen.areaId===null?[]:catalog.areas[game.areas[citizen.areaId].definitionId].gera;
-  const progress=Object.fromEntries(rules.map(rule=>[rule.id,(citizen.progress[rule.id]??0)%rule.tempoPraGerar]));
+  const definition=citizen.areaId===null?null:catalog.areas[game.areas[citizen.areaId].definitionId];
+  // Saves antigos tinham um relógio por item: aproveita o maior progresso conhecido.
+  const elapsed=definition?(citizen.progress.coleta??Math.max(0,...definition.gera.map(rule=>citizen.progress[rule.id]??0))):0;
+  const progress=definition?{coleta:elapsed%definition.tempoPraColetar}:{};
   game.citizens[key]={id:citizen.id,deckId:citizen.deckId,bundleId:citizen.bundleId,areaId:citizen.areaId,progress};
  }
  return game;

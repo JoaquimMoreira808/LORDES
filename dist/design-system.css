@@ -151,8 +151,9 @@ main.resources-collapsed { --sidebar-width: 48px; }
 .resources-collapsed .resource-sidebar {
   display: block;
   padding: var(--space-6) var(--space-2);
-  background: transparent;
+  background: #343637;
   border: 0;
+  border-right: 1px solid #555859;
 }
 .resources-collapsed .sidebar-heading {
   display: flex;
@@ -268,3 +269,39 @@ body.dragging-citizen .population-drawer.return-mode { transform: none; }
   .population-drawer { top: 72px; }
   main, main.resources-collapsed, body.decks-open main { padding-right: 56px; }
 }
+
+.resources-empty{color:var(--muted);font-size:12px;line-height:1.7;margin:16px 0}
+.loot-rarity{display:block;font-size:9px;margin-top:3px}
+
+.resource-search{display:block;width:100%;min-width:0;margin:8px 0 12px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised);color:var(--ink);font:inherit;font-size:12px}
+.resource-search::placeholder{color:var(--muted)}
+.resource-search:focus-visible{outline:2px solid #d9c694;outline-offset:2px}
+.resources-collapsed .resource-search{display:none}
+
+/* Laterais com as mesmas dimensões, superfície e controle de recolhimento. */
+body.decks-open main{padding-right:304px}
+.population-drawer{width:48px;transform:none;background:#343637;border-left:1px solid #555859;pointer-events:auto}
+.population-drawer.is-open,.population-drawer.return-mode{width:280px;max-width:calc(100vw - 64px);background:var(--stone);border-color:var(--line)}
+.population-drawer .drawer-handle{left:auto;right:8px;top:24px;margin:0;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-raised);color:var(--ink);box-shadow:none;letter-spacing:0}
+.population-drawer.is-open .drawer-handle{right:16px}
+.population-drawer .drawer-handle:hover{background:#3c493d}
+.population-drawer .drawer-handle svg{transform:none}
+.population-drawer.is-open .drawer-handle svg{transform:rotate(180deg)}
+.population-drawer .drawer-content{padding:24px 16px;border:0;border-radius:0;transition:none}
+.population-drawer:not(.is-open) .drawer-content{display:none}
+.population-drawer .drawer-heading{padding:0 38px 16px 0;margin:0 0 8px;min-height:48px;justify-content:flex-start}
+.population-drawer .drawer-heading h2{font-size:16px;letter-spacing:0;white-space:nowrap}
+.drawer-tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.drawer-tabs [role=tab]{flex:1;padding:10px 8px;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-size:12px}
+.drawer-tabs [role=tab][aria-selected=true]{color:var(--ink);border-bottom-color:var(--action)}
+.drawer-tabs [role=tab]:hover{background:var(--surface-raised)}
+.deck-count{display:block;color:var(--muted);font-size:10px;letter-spacing:1px;margin-bottom:12px}
+.population-drawer .population-deck{min-width:0;padding:8px;width:100%;gap:12px}
+#actions-panel{min-height:80px}
+@media(max-width:600px){body.decks-open main{padding-right:56px}}
+
+.resource-icon{display:inline-grid;place-items:center;width:100%;height:100%;min-width:0;min-height:0;vertical-align:middle}
+.resource-icon .resource-pixel{object-fit:contain;image-rendering:pixelated}
+.resource-flight .resource-icon{width:24px;height:24px}
+.icon-attribution{display:block;margin-top:24px;color:var(--muted);font-size:9px;line-height:1.6}
+.resources-collapsed .icon-attribution{display:none}
