@@ -1,1 +1,5 @@
 .sites-checkout/
+
+saves/*.json
+saves/.save-*.tmp
+__pycache__/

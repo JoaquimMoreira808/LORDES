@@ -1,10 +1,18 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>LORDES · Seu povo</title><link rel="stylesheet" href="style.css"></head>
-<body><header><a class="brand" href="./">♜ <span>LORDES<small>UMA HISTÓRIA FEITA DE PESSOAS</small></span></a><div class="status"><i></i> Sua aldeia está viva <button id="pause" aria-label="Pausar produção">Ⅱ</button></div></header>
-<main><div class="heading"><div><p class="eyebrow">A ALDEIA · DIA 1</p><h1>Um povo. Muitas possibilidades.</h1><p>Encontre um lugar para cada pessoa. Veja sua aldeia prosperar.</p></div><div class="population"><span>POPULAÇÃO</span><strong id="population">100</strong><small>cidadãos na sua aldeia</small></div></div>
-<section class="resources" aria-label="Recursos da aldeia" id="resources"></section>
-<div class="section-title"><h2>Distribua seu povo</h2><span>Arraste uma carta ou transfira um grupo abaixo</span></div>
-<section class="transfer" aria-label="Transferência em lote"><div><label for="from">DE</label><select id="from"></select></div><span class="arrow">→</span><div><label for="to">PARA</label><select id="to"></select></div><div class="quantity"><label for="amount">CIDADÃOS</label><input id="amount" type="number" min="1" step="1" value="10"><div class="presets"><button data-amount="1">1</button><button data-amount="10">10</button><button data-amount="100">100</button><button data-amount="all">Todos</button></div></div><button class="primary" id="transfer">Transferir <span>↗</span></button></section>
+<html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>LORDES · Seu povo</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bitcount+Prop+Single:wght@100..900&family=IBM+Plex+Sans:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css?v=save-1"></head>
+<body data-session="login">
+<section class="login-screen" id="login-screen" aria-labelledby="login-title"><form class="login-panel" id="login-form"><span class="login-rune rune-glyph" aria-hidden="true">ᛟ</span><a class="brand login-brand" href="./">LORDES</a><h1 id="login-title">Seu povo espera por você.</h1><p>Entre com seu nome para começar ou continuar sua história.</p><label for="player-name">SEU NOME</label><input id="player-name" name="name" autocomplete="username" minlength="1" maxlength="40" required placeholder="Como devemos chamar você?"><button class="login-submit" id="login-submit" type="submit">Entrar na aldeia <span aria-hidden="true">→</span></button><p class="login-error" id="login-error" role="alert"></p><small>Sem senha por enquanto. Seu nome identifica a partida.<br>O progresso fica salvo neste servidor.</small></form></section>
+<div id="game-shell" inert hidden><header><a class="brand" href="./">LORDES</a><div class="player-controls"><span id="player-label"></span><span class="save-status" id="save-status" role="status" aria-live="polite"></span><button id="save-button" type="button">Salvar</button><button id="logout-button" type="button">Sair</button></div></header>
+<main>
+<aside class="resource-sidebar" aria-labelledby="resource-title"><div class="sidebar-heading"><span class="sidebar-mark" aria-hidden="true">◈</span><h2 id="resource-title">Seus recursos</h2><button class="sidebar-toggle" id="sidebar-toggle" aria-expanded="true" aria-controls="resources" aria-label="Recolher recursos" title="Recolher recursos"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m10 3-5 5 5 5" stroke="currentColor" stroke-width="1.5"/></svg></button></div><div id="resources" class="resource-list"></div></aside>
 <section id="shelves" class="shelves" aria-label="Estantes de trabalho"></section>
-<section class="idle" id="idle"></section><p class="feedback" id="feedback" role="status" aria-live="polite"></p>
-<footer><span>♜ Cada carta, uma vida. Cada escolha, um caminho.</span><span>PROTÓTIPO · SEM PROGRESSÃO</span></footer></main><script src="app.js"></script></body></html>
+</main>
+<section class="population-drawer" id="population-drawer" aria-label="Decks de população">
+<button class="drawer-handle" id="drawer-toggle" aria-expanded="false" aria-controls="drawer-content"><span class="rune-glyph" aria-hidden="true">ᛟ</span> SEUS DECKS <span class="drawer-chevron" aria-hidden="true">⌃</span></button>
+<div class="return-zone" id="return-zone" aria-label="Devolver cidadãos aos seus bundles" inert><span class="return-rune rune-glyph" aria-hidden="true">ᛟ</span><div><h2>Devolver</h2><p id="return-description">Solte as cartas aqui para voltarem aos seus bundles</p></div><span class="return-arrow" aria-hidden="true">↓</span></div>
+<div class="drawer-content" id="drawer-content" inert>
+<div class="drawer-heading"><h2>Decks de população</h2><span id="deck-count"></span></div>
+<div class="deck-list" id="deck-list"></div><p class="assignment-status" id="assignment-status" role="status" aria-live="polite"></p>
+</div></section>
+</div>
+<script type="module" src="app.js?v=save-1"></script></body></html>
