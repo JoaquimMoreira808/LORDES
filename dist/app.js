@@ -30,7 +30,7 @@ function cards(id){
  return groups.length?groups.map(group=>{
   const first=group.ids[0],bundle=catalog.bundles[group.bundleId],deck=catalog.decks[group.deckId];
   return `<button class="card commonner-card assigned-card" data-citizen="${first}" data-source="${id}" aria-label="${bundle.nome}, ${deck.nome}, segure para retirar cidadãos"><span class="commonner-id"><span class="rune-glyph">${deck.runa||'ᛟ'}</span><span class="bundle-card-count">×${format(group.ids.length)}</span></span><span class="portrait">${citizenPortrait(first)}</span><small>${bundle.cartaNome||bundle.nome}</small></button>`;
- }).join(''):'<div class="empty">Nenhum cidadão nesta área</div>';
+ }).join(''):'';
 }
 function renderResources(){
  const rates=expectedRates(game,catalog);
@@ -40,15 +40,30 @@ function generationDetails(j){return j.definition.gera.map(rule=>{
  const item=catalog.items[rule.itemId],id=progressId(j.id,rule.id);
  return `<div class="generation-rule"><div class="generation-name">${resourceIcon(item)}<span>${item.nome}</span><small>${decimal(rule.chanceDeGerar*100)}%</small></div><div class="work-cycle"><div class="work-label"><span id="activity-${id}">${j.definition.atividade||'Gerando'}</span><span>${decimal(rule.tempoPraGerar)} s / cidadão</span></div><div class="work-track" role="progressbar" aria-label="Próxima geração de ${item.nome}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress-${id}"><div class="work-fill" id="fill-${id}"></div></div></div><div class="rule-amount">1–${format(rule.quantidadeMaxima)} por acerto · ${workerCount(j.id)} tentativas / ciclo</div></div>`;
 }).join('');}
+function fitLocationTitles(){
+ document.querySelectorAll('.location-title').forEach(title=>{
+  const available=title.clientWidth-8;
+  if(available<=0)return;
+  title.style.fontSize='32px';
+  const range=document.createRange();
+  range.selectNodeContents(title);
+  const measured=range.getBoundingClientRect().width;
+  if(measured>0)title.style.fontSize=Math.min(32,32*available/measured)+'px';
+ });
+}
+const locationTitlesObserver=new ResizeObserver(fitLocationTitles);
+locationTitlesObserver.observe($('shelves'));
+document.fonts.ready.then(fitLocationTitles);
+document.fonts.addEventListener('loadingdone',fitLocationTitles);
 function render(){
  jobs=areaViews();renderResources();
  $('shelves').innerHTML=jobs.map(j=>`<article class="shelf location" id="job-${j.id}" data-job="${j.id}" tabindex="0" role="group" aria-label="${j.location}, ${j.name}, receber cidadão" style="--accent:${j.color};--tint:${j.tint}">
- <h3 class="location-title">${j.location}</h3>
- <div class="location-frame"><button class="location-details-toggle" type="button" data-details="${j.id}" aria-label="Ver produção de ${j.location}" aria-controls="details-${j.id}" aria-expanded="false">i</button>${j.scene||j.primaryItem.arte?`<img class="location-art pixel-art ${j.scene?'location-scenery':'location-resource'}" src="${j.scene||j.primaryItem.arte}" alt="${j.location}" draggable="false">`:'<span class="location-placeholder rune-glyph" aria-hidden="true">ᛟ</span>'}<div class="location-caption"><span class="icon">${resourceIcon(j.primaryItem)}</span><span>${j.name}</span><span class="count">${format(workerCount(j.id))}</span></div><div class="cards">${cards(j.id)}</div></div>
+ <div class="location-frame"><h3 class="location-title">${j.location}</h3><div class="location-window">${j.scene||j.primaryItem.arte?`<img class="location-art pixel-art ${j.scene?'location-scenery':'location-resource'}" src="${j.scene||j.primaryItem.arte}" alt="${j.location}" draggable="false">`:'<span class="location-placeholder rune-glyph" aria-hidden="true">ᛟ</span>'}<div class="location-caption"><span class="icon">${resourceIcon(j.primaryItem)}</span><span>${j.name}</span><span class="count">${format(workerCount(j.id))}</span></div><div class="cards">${cards(j.id)}</div></div></div>
  <section class="location-details" id="details-${j.id}" role="dialog" aria-label="Produção de ${j.location}"><div class="details-heading"><h4>${j.name}</h4><span>${j.definition.tipo}</span></div><p class="area-description">${j.definition.descricao}</p>
  ${generationDetails(j)}
  <div class="shelf-foot"><span>${format(workerCount(j.id))} cidadãos</span><strong>${j.definition.gera.length} ${j.definition.gera.length===1?'geração':'gerações'}</strong></div><div class="details-rate">Média esperada <strong>${Object.entries(expectedRates(game,catalog,j.id)).map(([itemId,rate])=>`${decimal(rate)} ${catalog.items[itemId].nome}/s`).join(' · ')}</strong></div></section>
  </article>`).join('');
+ fitLocationTitles();
 }
 
 const displays=Object.fromEntries(Object.keys(catalog.items).map(id=>[id,0]));
@@ -102,30 +117,22 @@ function tick(now){
 }
 requestAnimationFrame(tick);
 
-// A faixa inferior abre a gaveta sem cobrir os ofícios quando está recolhida.
+// Barra de decks controlada por clique; permanece aberta durante a interação.
 const drawer=$('population-drawer'),drawerToggle=$('drawer-toggle'),drawerContent=$('drawer-content');
-let drawerOpen=false,drawerSuppressed=false,drawerCloseTimer;
+let drawerOpen=false;
 function setDrawer(open){
- clearTimeout(drawerCloseTimer);drawerCloseTimer=null;drawerOpen=open;
+ drawerOpen=open;
  drawer.classList.toggle('is-open',open);
+ document.body.classList.toggle('decks-open',open);
  drawerToggle.setAttribute('aria-expanded',String(open));
+ const label=open?'Recolher decks':'Abrir decks';
+ drawerToggle.setAttribute('aria-label',label);drawerToggle.title=label;
  drawerContent.inert=!open;
 }
-drawerToggle.addEventListener('click',()=>{drawerSuppressed=drawerOpen;setDrawer(!drawerOpen);});
-document.addEventListener('pointermove',event=>{
- if(activeDrag||event.pointerType!=='mouse')return;
- if(event.clientY<innerHeight-80)drawerSuppressed=false;
- if(!drawerOpen&&event.clientY>=innerHeight-60&&!drawerSuppressed)setDrawer(true);
- else if(drawerOpen){
-  if(event.clientY<drawer.getBoundingClientRect().top-24&&!drawer.contains(document.activeElement)){
-   if(!drawerCloseTimer)drawerCloseTimer=setTimeout(()=>{drawerCloseTimer=null;if(!activeDrag)setDrawer(false);},220);
-  }else{clearTimeout(drawerCloseTimer);drawerCloseTimer=null;}
- }
+drawerToggle.addEventListener('click',()=>setDrawer(!drawerOpen));
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&drawerOpen){drawerToggle.focus();setDrawer(false);}
 });
-drawer.addEventListener('focusin',event=>{if(event.target!==drawerToggle)setDrawer(true);});
-drawer.addEventListener('focusout',event=>{if(!activeDrag&&selectedCitizen===null&&!drawer.contains(event.relatedTarget))setDrawer(false);});
-document.addEventListener('keydown',event=>{if(event.key==='Escape'&&drawerOpen){drawerSuppressed=true;if(drawerContent.contains(document.activeElement))drawerToggle.focus();setDrawer(false);}});
-document.addEventListener('pointerdown',event=>{if(drawerOpen&&!drawer.contains(event.target))setDrawer(false);});
 
 function openBundle(deck,open){
  deck.classList.toggle('bundle-open',open);
@@ -178,7 +185,7 @@ function finishDrag(cancel=false){
   const destination=drag.returnTarget?'idle':drag.jobId;
   const moved=!cancel&&destination&&moveCitizens(drag.id,drag.source,destination,drag.amount);
   if(!moved){handSize=1;$('assignment-status').textContent='Cartas mantidas na origem.';}
-  drawerSuppressed=!!drag.away;setDrawer(drag.source==='idle'?!drag.away:false);
+  setDrawer(drag.drawerWasOpen);
  }else if(drag.longHold||cancel){
   handSize=1;selectedCitizen=null;suppressCitizenClick=true;setTimeout(()=>{suppressCitizenClick=false;},0);
   $('assignment-status').textContent='Cartas mantidas na origem.';
@@ -186,8 +193,8 @@ function finishDrag(cancel=false){
 }
 document.addEventListener('pointerdown',event=>{
  const card=event.target.closest('[data-citizen]');if(!card||event.button!==0||activeDrag)return;
- handSize=1;clearTimeout(drawerCloseTimer);drawerCloseTimer=null;
- activeDrag={id:Number(card.dataset.citizen),source:card.dataset.source||'idle',card,x:event.clientX,y:event.clientY,pointerId:event.pointerId,moved:false,amount:1,startedAt:performance.now(),drawerTop:drawer.getBoundingClientRect().top,away:false,pointerX:event.clientX,pointerY:event.clientY,pickupRect:card.getBoundingClientRect(),overSource:false};
+ handSize=1;
+ activeDrag={id:Number(card.dataset.citizen),source:card.dataset.source||'idle',card,x:event.clientX,y:event.clientY,pointerId:event.pointerId,moved:false,amount:1,startedAt:performance.now(),drawerWasOpen:drawerOpen,pointerX:event.clientX,pointerY:event.clientY,pickupRect:card.getBoundingClientRect(),overSource:false};
  card.setPointerCapture(event.pointerId);
  if(activeDrag.source!=='idle'){drawer.classList.add('return-mode');$('return-zone').inert=false;const citizen=game.citizens[activeDrag.id];$('return-description').textContent='Solte as cartas aqui para voltarem a '+catalog.decks[citizen.deckId].nome;}
  syncGathering();
@@ -197,14 +204,11 @@ document.addEventListener('pointermove',event=>{
  drag.pointerX=event.clientX;drag.pointerY=event.clientY;syncGathering();
  if(!drag.moved&&Math.hypot(event.clientX-drag.x,event.clientY-drag.y)>7){
   drag.card.classList.remove('holding-citizens');
-  drag.moved=true;selectedCitizen=null;clearTimeout(drawerCloseTimer);
+  drag.moved=true;selectedCitizen=null;
   drag.ghost=drag.card.cloneNode(true);drag.ghost.removeAttribute('data-citizen');drag.ghost.removeAttribute('data-source');drag.ghost.className='commonner-card drag-ghost';drag.ghost.setAttribute('aria-hidden','true');drag.ghost.tabIndex=-1;
   document.body.appendChild(drag.ghost);drag.card.classList.add('is-dragging');document.body.classList.add('dragging-citizen');updateHand();
  }
  if(!drag.moved)return;
- if(event.clientY<drag.drawerTop-72)drag.away=true;
- else if(event.clientY>=drag.drawerTop-24)drag.away=false;
- document.body.classList.toggle('drawer-away',drag.away);
  drag.ghost.style.left=event.clientX+'px';drag.ghost.style.top=event.clientY+'px';
  clearDropTargets();const hit=document.elementFromPoint(event.clientX,event.clientY);
  const target=hit?.closest('[data-job]');
@@ -217,7 +221,7 @@ document.addEventListener('pointerup',event=>{if(activeDrag?.pointerId===event.p
 document.addEventListener('pointercancel',()=>finishDrag(true));
 document.addEventListener('keydown',event=>{if(event.key==='Escape'){finishDrag(true);selectedCitizen=null;clearDropTargets();}});
 document.addEventListener('click',event=>{
- if(suppressCitizenClick||event.target.closest('[data-details]'))return;
+ if(suppressCitizenClick)return;
  const card=event.target.closest('[data-citizen]');
  if(card){
  if(card.dataset.source&&card.dataset.source!=='idle')return;
@@ -285,36 +289,62 @@ const sidebarToggle=$('sidebar-toggle');
 sidebarToggle.addEventListener('click',()=>{
  const collapsed=sidebarToggle.getAttribute('aria-expanded')==='true';
  document.querySelector('main').classList.toggle('resources-collapsed',collapsed);
+ $('resources').hidden=collapsed;
  sidebarToggle.setAttribute('aria-expanded',String(!collapsed));
  const label=collapsed?'Expandir recursos':'Recolher recursos';
  sidebarToggle.setAttribute('aria-label',label);sidebarToggle.title=label;
 });
 
-function showLocationDetails(location,open){
+const detailsCloseTimers=new WeakMap();
+function positionLocationDetails(location,point){
+ const panel=location.querySelector('.location-details');
+ const anchor=location.querySelector('.location-frame').getBoundingClientRect();
+ const x=point?.clientX??anchor.right,y=point?.clientY??anchor.bottom;
+ const margin=12,gap=16,width=panel.offsetWidth,height=panel.offsetHeight;
+ const left=x+gap+width<=innerWidth-margin?x+gap:x-width-gap;
+ const top=y+gap+height<=innerHeight-margin?y+gap:y-height-gap;
+ panel.style.left=Math.max(margin,Math.min(left,innerWidth-width-margin))+'px';
+ panel.style.top=Math.max(margin,Math.min(top,innerHeight-height-margin))+'px';
+}
+function showLocationDetails(location,open,point){
+ clearTimeout(detailsCloseTimers.get(location));
+ if(open){
+  document.querySelectorAll('.location.details-open').forEach(other=>{
+   if(other!==location)showLocationDetails(other,false);
+  });
+  positionLocationDetails(location,point);
+ }
  location.classList.toggle('details-open',open);
- location.querySelector('[data-details]').setAttribute('aria-expanded',String(open));
+ location.setAttribute('aria-expanded',String(open));
 }
 document.addEventListener('pointerover',event=>{
  if(event.pointerType!=='mouse'||activeDrag)return;
  const location=event.target.closest('.location');
- if(location&&!location.contains(event.relatedTarget))showLocationDetails(location,true);
+ if(location){
+  clearTimeout(detailsCloseTimers.get(location));
+  if(!location.contains(event.relatedTarget))showLocationDetails(location,true,event);
+ }
+});
+document.addEventListener('pointermove',event=>{
+ if(event.pointerType!=='mouse'||activeDrag||event.target.closest('.location-details'))return;
+ const location=event.target.closest('.location.details-open');
+ if(location)positionLocationDetails(location,event);
 });
 document.addEventListener('pointerout',event=>{
  if(event.pointerType!=='mouse')return;
  const location=event.target.closest('.location');
- if(location&&!location.contains(event.relatedTarget)&&!location.contains(document.activeElement))showLocationDetails(location,false);
+ if(location&&!location.contains(event.relatedTarget)&&!location.contains(document.activeElement))detailsCloseTimers.set(location,setTimeout(()=>showLocationDetails(location,false),160));
 });
 document.addEventListener('focusin',event=>{const location=event.target.closest('.location');if(location&&!activeDrag&&event.target.matches(':focus-visible'))showLocationDetails(location,true);});
 document.addEventListener('focusout',event=>{const location=event.target.closest('.location');if(location&&!location.contains(event.relatedTarget)&&!location.matches(':hover'))showLocationDetails(location,false);});
-document.addEventListener('click',event=>{
- const toggle=event.target.closest('[data-details]');if(!toggle)return;
- const location=toggle.closest('.location');
- // O hover já abre no mouse; o botão também permite abrir em telas de toque.
- if(event.pointerType==='mouse')showLocationDetails(location,true);
- else showLocationDetails(location,toggle.getAttribute('aria-expanded')!=='true');
-});
 document.addEventListener('pointerdown',event=>{document.querySelectorAll('.location.details-open').forEach(location=>{if(!location.contains(event.target))showLocationDetails(location,false);});});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.location.details-open').forEach(location=>showLocationDetails(location,false));});
+
+window.addEventListener('resize',()=>document.querySelectorAll('.location.details-open').forEach(location=>positionLocationDetails(location)));
+window.addEventListener('scroll',event=>{
+ if(event.target instanceof Element&&event.target.closest('.location-details'))return;
+ document.querySelectorAll('.location.details-open').forEach(location=>showLocationDetails(location,false));
+},true);
 
 function saveMessage(message,error=false){$('save-status').textContent=message;$('save-status').classList.toggle('save-error',error);}
 function persistGame({keepalive=false}={}){

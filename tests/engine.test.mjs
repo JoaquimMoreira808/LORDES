@@ -3,13 +3,20 @@ import assert from 'node:assert/strict';
 import { catalog, initialSetup } from '../dist/game/catalog.mjs';
 import { createGame, addArea, citizenIds, citizenGroups, similarCitizenIds, moveCitizens, advanceGame, expectedRates, ruleProgress, validateCatalog } from '../dist/game/engine.mjs';
 const clone = value => JSON.parse(JSON.stringify(value));
-const fresh = () => createGame(catalog, initialSetup);
+import { productionSetup } from './fixtures.mjs';
+const fresh = () => createGame(catalog, productionSetup);
 const roll = (...values) => { let index=0; return () => { assert.ok(index<values.length,'Sorteios extras inesperados');return values[index++]; }; };
 
-test('estado inicial e contagens derivadas, sem duplicar cidadãos', () => {
- const game=fresh();assert.equal(Object.keys(game.citizens).length,100);assert.equal(citizenIds(game).length,96);
- assert.equal(citizenIds(game,'farm').length,1);assert.equal(game.inventory.trigo,0);
- assert.equal(Object.hasOwn(game,'counts'),false);assert.equal(catalog.areas['campos-trigo'].gera[0].quantidadeMaxima,3);
+test('partida nova: só o Norte, floresta e pedreira, sem ninguém alocado', () => {
+ const game=createGame(catalog,initialSetup);
+ assert.equal(Object.keys(game.citizens).length,100);
+ assert.equal(citizenIds(game).length,100);
+ assert.deepEqual(Object.keys(game.areas),['wood','mine']);
+ assert.equal(citizenIds(game,'wood').length,0);assert.equal(citizenIds(game,'mine').length,0);
+ assert.ok(Object.values(game.citizens).every(citizen=>citizen.deckId==='povo-norte'&&citizen.bundleId==='norte-commonners'&&citizen.areaId===null));
+ assert.deepEqual(advanceGame(game,catalog,60),[]);
+ assert.ok(Object.values(game.inventory).every(amount=>amount===0));
+ assert.equal(Object.hasOwn(game,'counts'),false);
 });
 test('máximo e mínimo inclusivos; estoque por item', () => {
  const game=fresh();const events=advanceGame(game,catalog,3,roll(0,0));
@@ -24,18 +31,18 @@ test('tentativa e quantidade são sorteadas individualmente por cidadão', () =>
 });
 test('chance zero falha; chance um sempre gera', () => {
  const content=clone(catalog);content.areas['campos-trigo'].gera[0].chanceDeGerar=0;
- const game=createGame(content,initialSetup);const [event]=advanceGame(game,content,3,()=>0);
+ const game=createGame(content,productionSetup);const [event]=advanceGame(game,content,3,()=>0);
  assert.equal(event.attempts,1);assert.equal(event.successes,0);assert.equal(event.amount,0);assert.equal(game.inventory.trigo,0);
 });
 test('chance intermediária é por tentativa, sem multiplicar um sorteio coletivo', () => {
  const content=clone(catalog);content.areas['campos-trigo'].gera[0].chanceDeGerar=.5;
- const game=createGame(content,initialSetup);moveCitizens(game,content,5,'idle','farm',1);
+ const game=createGame(content,productionSetup);moveCitizens(game,content,5,'idle','farm',1);
  const [event]=advanceGame(game,content,3,roll(.49,.99,.5));
  assert.equal(event.attempts,2);assert.equal(event.successes,1);assert.equal(event.amount,3);
 });
 test('itens de uma área têm relógios independentes e podem sair juntos', () => {
  const content=clone(catalog);content.areas['campos-trigo'].gera.push({id:'colher-maca',itemId:'maca',quantidadeMaxima:1,tempoPraGerar:2,chanceDeGerar:1});
- const game=createGame(content,initialSetup);
+ const game=createGame(content,productionSetup);
  assert.equal(advanceGame(game,content,2,()=>0)[0].itemId,'maca');assert.equal(game.inventory.trigo,0);
  advanceGame(game,content,1,()=>0);assert.equal(game.inventory.trigo,1);assert.equal(game.inventory.maca,1);
  const events=advanceGame(game,content,3,()=>0).filter(event=>event.areaId==='farm');
@@ -65,7 +72,7 @@ test('devolução mantém deck/bundle e movimentações inválidas não alteram 
 test('mesma mão só agrupa cidadãos do mesmo deck E bundle', () => {
  const content=clone(catalog);content.bundles.especialistas={id:'especialistas',deckId:'povo-norte',nome:'Especialistas'};
  content.decks.sul={id:'sul',nome:'Povo do Sul'};content.bundles['sul-commonners']={id:'sul-commonners',deckId:'sul',nome:'Commonners'};
- const game=createGame(content,{areas:initialSetup.areas,populations:[{bundleId:'norte-commonners',quantidade:2},{bundleId:'especialistas',quantidade:2},{bundleId:'sul-commonners',quantidade:2}]});
+ const game=createGame(content,{areas:productionSetup.areas,populations:[{bundleId:'norte-commonners',quantidade:2},{bundleId:'especialistas',quantidade:2},{bundleId:'sul-commonners',quantidade:2}]});
  assert.deepEqual(similarCitizenIds(game,1,'idle'),[1,2]);assert.equal(citizenGroups(game,'idle').length,3);
  assert.equal(moveCitizens(game,content,1,'idle','farm',3),false);
  assert.ok(moveCitizens(game,content,1,'idle','farm',2));assert.ok(moveCitizens(game,content,3,'idle','farm',2));
@@ -88,7 +95,7 @@ test('dados inválidos são rejeitados antes de iniciar a partida', () => {
  const game=fresh();assert.throws(()=>addArea(game,catalog,{id:'farm',definitionId:'campos-trigo'}));assert.throws(()=>advanceGame(game,catalog,-1));
 });
 test('milhares de cidadãos geram efeitos agregados, conservando identidades', () => {
- const game=createGame(catalog,{areas:initialSetup.areas,populations:[{bundleId:'norte-commonners',quantidade:5000}]});
+ const game=createGame(catalog,{areas:productionSetup.areas,populations:[{bundleId:'norte-commonners',quantidade:5000}]});
  assert.ok(moveCitizens(game,catalog,1,'idle','farm',5000));const events=advanceGame(game,catalog,3,()=>0);
  assert.equal(events.length,1);assert.equal(events[0].attempts,5000);assert.equal(game.inventory.trigo,5000);
  assert.ok(moveCitizens(game,catalog,1,'farm','idle',5000));assert.equal(citizenIds(game).length,5000);assert.equal(Object.keys(game.citizens).length,5000);

@@ -55,3 +55,11 @@ node tests/engine.test.mjs
 node tests/save.test.mjs
 python3 -m unittest discover -s tests -p 'test_server.py' -v
 ```
+
+## Estado inicial de novas partidas
+
+- Apenas o deck Povo Do Norte, com 100 Commonners disponíveis.
+- Apenas Floresta de Carvalho e Pedreira de Granito conquistadas.
+- Nenhum cidadão alocado e todos os estoques zerados.
+
+Campos de Trigo e Pomar de Maçãs continuam no catálogo para futuras conquistas. A mudança só vale para nomes sem save existente: partidas anteriores preservam suas áreas, cidadãos e alocações.

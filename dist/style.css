@@ -1,5 +1,5 @@
 :root{color-scheme:dark;--bg:#1c1e1f;--ink:#deddd7;--muted:#999b98;--line:#494b4a;--stone:#303232}
-*{box-sizing:border-box;border-radius:0!important}
+*{box-sizing:border-box}
 body{margin:0;min-height:100dvh;background:var(--bg);color:var(--ink);font:14px 'IBM Plex Sans',sans-serif;isolation:isolate}
 /* Duas camadas de pedra: granulação em movimento e luz mineral. */
 body::before{content:"";position:fixed;inset:-100px;z-index:-2;pointer-events:none;background:url('stone-grain.svg') repeat;opacity:.2;animation:grain-drift 14s steps(8,end) infinite;will-change:transform}

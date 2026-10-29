@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {catalog,initialSetup} from '../dist/game/catalog.mjs';
 import {createGame,addArea,moveCitizens,advanceGame} from '../dist/game/engine.mjs';
 import {restoreGame} from '../dist/game/save.mjs';
+import {productionSetup} from './fixtures.mjs';
 const fresh=()=>createGame(catalog,initialSetup);
 const copy=value=>JSON.parse(JSON.stringify(value));
 test('save restaura inventário, áreas conquistadas, cartas e progresso individual',()=>{
@@ -12,8 +13,8 @@ test('save restaura inventário, áreas conquistadas, cartas e progresso individ
  assert.deepEqual(restored,game);assert.notEqual(restored.citizens[5],game.citizens[5]);
 });
 test('recuperar não concede novamente as áreas ou cidadãos iniciais',()=>{
- const game=fresh();delete game.areas.fruit;game.citizens[4].areaId=null;game.citizens[4].progress={};delete game.citizens[100];
- const restored=restoreGame(catalog,copy(game));assert.equal(Object.keys(restored.areas).length,3);assert.equal(Object.keys(restored.citizens).length,99);
+ const game=fresh();delete game.areas.mine;game.citizens[4].areaId=null;game.citizens[4].progress={};delete game.citizens[100];
+ const restored=restoreGame(catalog,copy(game));assert.equal(Object.keys(restored.areas).length,1);assert.equal(Object.keys(restored.citizens).length,99);
 });
 test('novo item de catálogo começa zerado ao carregar save antigo',()=>{
  const content=copy(catalog);content.items.resina={id:'resina',nome:'Resina'};
@@ -25,7 +26,15 @@ test('dados inválidos ou referências ausentes não viram partida nova',()=>{
  }
 });
 test('alterar duração no catálogo normaliza progresso e não produz offline',()=>{
- const game=fresh();advanceGame(game,catalog,2,()=>0);
- const content=copy(catalog);content.areas['campos-trigo'].gera[0].tempoPraGerar=1.5;
- const restored=restoreGame(content,copy(game));assert.equal(restored.citizens[1].progress['colher-trigo'],.5);assert.equal(restored.inventory.trigo,0);
+ const game=fresh();moveCitizens(game,catalog,1,'idle','wood',1);advanceGame(game,catalog,2,()=>0);
+ const content=copy(catalog);content.areas['floresta-carvalho'].gera[0].tempoPraGerar=1.5;
+ const restored=restoreGame(content,copy(game));assert.equal(restored.citizens[1].progress['cortar-carvalho'],.5);assert.equal(restored.inventory.trigo,0);
+});
+
+test('saves anteriores preservam suas quatro áreas e trabalhadores alocados',()=>{
+ const existing=createGame(catalog,productionSetup);
+ const restored=restoreGame(catalog,copy(existing));
+ assert.deepEqual(restored,existing);
+ assert.equal(Object.keys(restored.areas).length,4);
+ assert.equal(Object.values(restored.citizens).filter(citizen=>citizen.areaId!==null).length,4);
 });
