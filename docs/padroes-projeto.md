@@ -142,3 +142,7 @@ Verificação desta mudança: testes automatizados do motor, saves e servidor e 
 ## População inicial — atualização de 29/10/2026
 
 Por pedido explícito do usuário, novas partidas começam com **25 cidadãos**, em vez de 100. Partidas existentes preservam todos os cidadãos do save. Os custos das áreas permanecem os mesmos; estimativas anteriores com 50 trabalhadores são exemplos de escala, não uma alocação possível na população inicial atual.
+
+## Visualização da vila — 30/10/2026
+
+Pedido do usuário: áreas de ação recolhíveis embaixo da tela e uma vila que cresce com as construções, com desenhos simples convertidos para caracteres ASCII e pessoas andando. Primeira implementação descrita em [Interface](design-system.md#protótipo-de-vila-ascii--30102026). Trata-se de protótipo visual, ainda sem validação estética pelo usuário; não altera regras nem formato dos saves.

@@ -316,3 +316,23 @@ body.decks-open main{padding-right:304px}
 .area-action button { width: 100%; padding: var(--space-2); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--action); color: var(--bg); cursor: pointer; }
 .area-action button:disabled { opacity: .5; cursor: default; }
 .area-action p, #area-action-status { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+/* Vila ASCII e áreas de ação recolhíveis no rodapé do espaço central. */
+.village-workspace { min-width: 0; height: calc(100dvh - 144px); min-height: 400px; display: flex; flex-direction: column; gap: var(--space-4); }
+.village-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-3); }
+.village-heading h1 { margin: 0; font: 400 28px 'Instrument Serif', serif; color: var(--ink); }
+.village-heading > span { color: var(--muted); font-size: 12px; }
+.village-scene { flex: 1; min-height: 180px; overflow: hidden; display: grid; place-items: center; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--bg); }
+#village-ascii { margin: 0; color: var(--action); font: 12px/12px monospace; letter-spacing: 0; white-space: pre; user-select: none; }
+.work-area-panel { flex: 0 0 auto; min-height: 0; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--stone); }
+.work-area-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: var(--space-4); border: 0; border-radius: var(--radius-md); background: var(--surface-raised); color: var(--ink); cursor: pointer; font-size: 14px; }
+#work-area-count { color: var(--muted); }
+.work-area-toggle[aria-expanded=true] .work-area-chevron { transform: rotate(180deg); }
+.work-area-panel .shelves { display: flex; gap: var(--space-4); padding: var(--space-4); overflow: auto; max-height: 42dvh; align-items: start; }
+.work-area-panel .shelf.location { flex: 0 0 200px; }
+@media(max-width:600px){
+ .village-workspace { width: 100%; height: calc(100dvh - 180px); min-height: 380px; }
+ .work-area-panel .shelf.location { flex-basis: 170px; }
+ .village-heading h1 { font-size: 24px; }
+}
+.village-lab-link { color: var(--action); font-size: 12px; }

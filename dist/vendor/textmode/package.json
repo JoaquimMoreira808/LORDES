@@ -1,0 +1,106 @@
+{
+	"name": "textmode.js",
+	"version": "0.18.0",
+	"description": "textmode.js is a lightweight creative coding library for creating real-time ASCII art on the web.",
+	"type": "module",
+	"engines": {
+		"node": ">=20.8.1"
+	},
+	"devEngines": {
+		"runtime": {
+			"name": "node",
+			"version": "^24.0.0",
+			"onFail": "error"
+		},
+		"packageManager": {
+			"name": "npm",
+			"version": "^11.0.0",
+			"onFail": "error"
+		}
+	},
+	"main": "./dist/textmode.umd.js",
+	"module": "./dist/textmode.esm.js",
+	"types": "./dist/types/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/types/index.d.ts",
+			"import": "./dist/textmode.esm.js",
+			"require": "./dist/textmode.umd.js"
+		},
+		"./addon": {
+			"types": "./dist/types/exports/addon.d.ts",
+			"import": "./dist/textmode.esm.js",
+			"require": "./dist/textmode.umd.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"textmodeTypes": {
+		"stripInternal": true
+	},
+	"scripts": {
+		"prebuild": "npm run clean",
+		"clean": "rm -rf dist",
+		"dev": "textmode-build dev --port 5177 --host",
+		"build:bundle": "textmode-build build",
+		"build:types": "textmode-types build",
+		"build": "npm run build:bundle && npm run build:types",
+		"check": "npm run format:check && npm run lint && npm run lint:markdown && npm run typecheck && npm run docs:check && npm run test && npm run build && npm run types:verify",
+		"docs:links:add": "textmode-docs links add",
+		"docs:api:check": "textmode-docs api-check",
+		"docs:check": "textmode-docs check",
+		"docs:dev": "textmode-docs watch",
+		"docs:build": "textmode-docs build",
+		"preview": "textmode-build preview",
+		"test": "textmode-build test",
+		"test:unit": "textmode-build test --project unit-node --project unit-jsdom",
+		"test:integration": "textmode-build test --project integration-jsdom",
+		"test:contracts": "textmode-build test --project contracts-node",
+		"test:tooling": "textmode-build test --project tooling-node",
+		"test:watch": "textmode-build test:watch",
+		"format": "textmode-lint format",
+		"format:check": "textmode-lint format:check",
+		"typecheck": "textmode-types check",
+		"types:verify": "textmode-types verify",
+		"lint:markdown": "textmode-lint lint:markdown",
+		"lint:markdown:fix": "textmode-lint lint:markdown --fix",
+		"lint": "textmode-lint lint src",
+		"prepare": "textmode-release hooks",
+		"prepack": "npm run build && npm run types:verify",
+		"release": "textmode-release release"
+	},
+	"devDependencies": {
+		"@textmode/build": "^0.1.0",
+		"@textmode/docs": "^0.3.0",
+		"@textmode/lint": "^0.1.0",
+		"@textmode/release": "^0.2.0",
+		"@textmode/tsconfig": "^0.2.1",
+		"@types/node": "^24.0.0",
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.10"
+	},
+	"keywords": [
+		"ascii",
+		"petscii",
+		"textmode",
+		"canvas",
+		"webgl",
+		"creative-coding",
+		"art",
+		"design",
+		"graphics",
+		"ascii-art"
+	],
+	"author": "humanbydefinition <hello@textmode.art> (https://code.textmode.art)",
+	"license": "MIT",
+	"homepage": "https://code.textmode.art",
+	"prettier": "@textmode/lint/prettier",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/humanbydefinition/textmode.js-dev.git"
+	},
+	"bugs": {
+		"url": "https://github.com/humanbydefinition/textmode.js/issues"
+	}
+}

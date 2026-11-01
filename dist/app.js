@@ -1,3 +1,4 @@
+import { createVillageView } from './game/village-view.mjs';
 import { resourceIcon, observeResourceIcons } from './game/resource-icons.mjs';
 import { catalog, initialSetup } from './game/catalog.mjs';
 import { createGame, canCreateArea, createAreaFromAction, citizenIds, similarCitizenIds, citizenGroups, moveCitizens as moveEntities, advanceGame, expectedRates, collectionProgress } from './game/engine.mjs';
@@ -21,6 +22,14 @@ const progressId=(areaId,ruleId)=>`${areaId}-${ruleId}`;
 const format=n=>Math.floor(n).toLocaleString('pt-BR');
 const $=id=>document.getElementById(id);
 let activeDrag=null,selectedCitizen=null,suppressCitizenClick=false,handSize=1;
+const villageView=createVillageView($('village-ascii'));
+$('work-area-toggle').addEventListener('click',()=>{
+ const open=$('work-area-toggle').getAttribute('aria-expanded')!=='true';
+ $('work-area-toggle').setAttribute('aria-expanded',String(open));
+ $('shelves').hidden=!open;
+ document.querySelectorAll('.location.details-open').forEach(location=>showLocationDetails(location,false));
+ fitLocationTitles();
+});
 
 function citizenPortrait(citizenId){
  const citizen=game.citizens[citizenId],bundle=catalog.bundles[citizen.bundleId],deck=catalog.decks[citizen.deckId];
@@ -90,6 +99,9 @@ document.fonts.ready.then(fitLocationTitles);
 document.fonts.addEventListener('loadingdone',fitLocationTitles);
 function render(){
  jobs=areaViews();renderResources();renderActions();
+ villageView.update(game);
+ $('work-area-count').textContent='('+format(jobs.length)+')';
+ $('village-summary').textContent=format(jobs.length)+' locais · '+format(Object.keys(game.citizens).length)+' cidadãos';
  $('shelves').innerHTML=jobs.map(j=>`<article class="shelf location" id="job-${j.id}" data-job="${j.id}" tabindex="0" role="group" aria-label="${j.location}, ${j.name}, receber cidadão" style="--accent:${j.color};--tint:${j.tint}">
  <div class="location-frame"><h3 class="location-title">${j.location}</h3><div class="location-window">${j.scene||j.primaryItem.arte?`<img class="location-art pixel-art ${j.scene?'location-scenery':'location-resource'}" src="${j.scene||j.primaryItem.arte}" alt="${j.location}" draggable="false">`:'<span class="location-placeholder rune-glyph" aria-hidden="true">ᛟ</span>'}<div class="location-caption"><span class="icon">${resourceIcon(j.primaryItem)}</span><span>${j.name}</span><span class="count">${format(workerCount(j.id))}</span></div><div class="cards">${cards(j.id)}</div></div></div>
  <section class="location-details" id="details-${j.id}" role="dialog" aria-label="Produção de ${j.location}"><div class="details-heading"><h4>${j.name}</h4><span>${j.definition.tipo}</span></div><p class="area-description">${j.definition.descricao}</p>
@@ -127,7 +139,7 @@ function proc(job,event){
  floatText(shelf,'+'+format(amount)+' '+item.nome,'yield-label');
  if(!stock||stock.hidden||$('resources').hidden)return;
  const arrive=()=>{if(!stock.isConnected)return;flash(stock,'received');floatText(stock,'+'+format(amount),'stock-gain');};
- if(reducedMotion.matches){arrive();return;}
+ if(reducedMotion.matches||$('shelves').hidden){arrive();return;}
  const from=shelf.querySelector('.icon').getBoundingClientRect(),to=stock.querySelector('.resource-art').getBoundingClientRect();
  for(let i=0;i<4;i++){
   const particle=document.createElement('span');particle.className='resource-flight';if(i===0)particle.innerHTML=resourceIcon(item);else particle.textContent='◆';particle.setAttribute('aria-hidden','true');document.body.appendChild(particle);
